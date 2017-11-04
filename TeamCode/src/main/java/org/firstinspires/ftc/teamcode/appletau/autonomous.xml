@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<Robot type="FirstInspires-FTC">
+    <MotorController name="Right Side" serialNumber="AL00XV4S">
+        <Motor name="drive-fr" port="1" />
+        <Motor name="drive-br" port="2" />
+    </MotorController>
+    <DeviceInterfaceModule name="Device Interface Module 3" serialNumber="AL00VFTQ">
+        <Gyro name="gyro" port="0" />
+    </DeviceInterfaceModule>
+    <MotorController name="Left Side" serialNumber="AL00XULF">
+        <Motor name="drive-fl" port="1" />
+        <Motor name="drive-bl" port="2" />
+    </MotorController>
+</Robot>
