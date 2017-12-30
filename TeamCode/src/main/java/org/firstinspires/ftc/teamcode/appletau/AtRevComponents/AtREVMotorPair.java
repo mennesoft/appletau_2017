@@ -37,6 +37,7 @@ public class AtREVMotorPair extends AtREVComponent {
         int dividePos = motorNames.indexOf(':');
         nameOne = motorNames.substring(0,dividePos);
         nameTwo = motorNames.substring(dividePos + 1);
+        name = motorNames;
     }
 
     @Override

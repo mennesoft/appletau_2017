@@ -35,14 +35,16 @@ package org.firstinspires.ftc.teamcode.appletau;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.appletau.AtRevComponents.*;
+
 /**
  * TeleOp Mode
  * <p/>
  * Enables control of the robot via the gamepad
  */
-@TeleOp(name = "Concept: 2Wheel", group = "Concept")
+@TeleOp(name = "REV Test", group = "Concept")
 public class AtTwoWheelTeleOp extends OpMode {
-    AtWheelPair driveWheels;
+    //AtWheelPair driveWheels;
     //AtAttachment attachments;
     private int wingTime = 0;
     private boolean slow = true;
@@ -60,6 +62,10 @@ public class AtTwoWheelTeleOp extends OpMode {
     private final float slowModeMultiplier = .4f;
     private final boolean wingInactive = false;
 
+    private AtREVMotor spinner1;
+    private AtREVMotor spinner2;
+    AtREVMotor beltMover;
+    private AtREVModule revModule;
 
     /**
      * Constructor
@@ -81,11 +87,23 @@ public class AtTwoWheelTeleOp extends OpMode {
 		 * configured your robot and created the configuration file.
 		 */
 
-        driveWheels = new AtWheelPair("left","right","master");
-        telemetry.addData("Drive Initialization Good: ", driveWheels.initialize(hardwareMap));
+		revModule = new AtREVModule();
+
+        spinner1 = new AtREVMotor("belt_L");
+        revModule.add(spinner1);
+
+        spinner2 = new AtREVMotor("belt_R");
+        revModule.add(spinner2);
+
+//        beltMover = new AtREVMotor("belt_mover");
+//        revModule.add(beltMover);
+
+        revModule.initialize(hardwareMap);
+
+        //telemetry.addData("Drive Initialization Good: ", driveWheels.initialize(hardwareMap));
 
         //attachments = new AtAttachment();
-        //telemetry.addData("Attachment Initialization Good: ", attachments.initialize(hardwareMap));
+        //telemetry.addData("Attachment Initialization Good: ", attachments.init(hardwareMap));
         //attachments.flapWings();
     }
 
@@ -109,46 +127,31 @@ public class AtTwoWheelTeleOp extends OpMode {
     }
 
     //Controls and gizmos for the first driver (chassis)
-    public void driver1() {
+    private void driver1() {
 
-        //Normal Tank Driving
-        right = gamepad1.right_stick_y;
-        left = gamepad1.left_stick_y;
+        //Spinner Value
+        float spin1 = (float)scaleInput(gamepad1.right_stick_y);
+        float spin2 = (float)scaleInput(gamepad1.left_stick_y);
+        float mover = (float)scaleInput(gamepad1.right_stick_x);
 
-        // scale the joystick value to make it easier to control
-        // the robot more precisely at slower speeds.
-        right = (float) scaleInput(right);
-        left = (float) scaleInput(left);
+        if (spin1 < 0.95f) spin1 /= 3;
+        if (spin2 < 0.95f) spin2 /= 3;
+        if (mover < 0.95f) mover /= 3;
 
-        if (gamepad1.a) {
-            if (!switchedSlowLastTime) {
-                slow = !slow;
-            }
-            switchedSlowLastTime = true;
+        if (gamepad1.a){ //Unison Spinning +
+            ((AtREVMotor)revModule.get("belt_L")).setPower(.5f);
+            ((AtREVMotor)revModule.get("belt_R")).setPower(-.5f);
+        } else if (gamepad1.y){ //Unison Spinning -
+            ((AtREVMotor)revModule.get("belt_L")).setPower(.5f);
+            ((AtREVMotor)revModule.get("belt_R")).setPower(-.5f);
+//        } else if (gamepad1.x){ //belt moving +
+//            ((AtREVMotor)revModule.get("belt_mover")).setPower(.5f);
+//        } else if (gamepad1.b){ //belt moving -
+//            ((AtREVMotor)revModule.get("belt_mover")).setPower(-.5f);
         } else {
-            switchedSlowLastTime = false;
-        }
-
-        if (gamepad1.b) { // Red button stops stuff
-            //attachments.stop();
-            driveWheels.stop();
-        } else {
-            // These are just some presets and normal driving if no super special motor buttons (above things) are pressed
-            if (gamepad1.right_trigger > 0) { // Swing turn right
-                left = .9f;
-                right = .15f;
-            } else if (gamepad1.left_trigger > 0) { // Swing turn left
-                left = .15f;
-                right = .9f;
-            }
-
-            if (slow) {
-                left *= slowModeMultiplier;
-                right *= slowModeMultiplier;
-            }
-
-            driveWheels.power1(left);
-            driveWheels.power2(right);
+            ((AtREVMotor)revModule.get("belt_L")).setPower(spin1);
+            ((AtREVMotor)revModule.get("belt_R")).setPower(spin2);
+//            ((AtREVMotor)revModule.get("belt_mover")).setPower(mover);
         }
     }
 
@@ -188,7 +191,8 @@ public class AtTwoWheelTeleOp extends OpMode {
     //Updates telemetry
     public void telemetry() {
         //   attachments.reportPosition(telemetry);
-        driveWheels.reportPosition(telemetry);
+        //driveWheels.reportPosition(telemetry);
+        /*
         telemetry.addData("Text", "*** Robot Data***");
         telemetry.addData("Left  side pwr:", left);
         telemetry.addData("Left  side raw:", driveWheels.getPower1());
@@ -220,7 +224,7 @@ public class AtTwoWheelTeleOp extends OpMode {
      */
     @Override
     public void stop() {
-        driveWheels.stop();
+        //driveWheels.stop();
     }
 
 
@@ -229,7 +233,7 @@ public class AtTwoWheelTeleOp extends OpMode {
      * scaled value is less than linear.  This is to make it easier to drive
      * the robot more precisely at slower speeds.
      */
-    double scaleInput(double dVal) {
+    private double scaleInput(double dVal) {
         double[] scaleArray = {0.0, 0.05, 0.06, 0.08, 0.09, 0.11, 0.13, 0.15,
                 0.18, 0.22, 0.25, 0.33, 0.40, 0.52, 0.66, 0.85, 1.00};
 

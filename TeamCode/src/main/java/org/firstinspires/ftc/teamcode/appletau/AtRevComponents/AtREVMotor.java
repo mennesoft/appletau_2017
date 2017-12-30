@@ -27,7 +27,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
  */
 public class AtREVMotor extends AtREVComponent {
     private DcMotor motor;
-
     ///private int position;
 
     public AtREVMotor(String motorName) {
@@ -53,15 +52,31 @@ public class AtREVMotor extends AtREVComponent {
         motor.setDirection(dir);
     }
 
-    /*
-
-    public double getPower(){
-        return motor.getPower();
+    /**
+     * Sets motor power according to some given position, stops if within the given sensitivity value
+     * @param power power to set the motor
+     * @param degrees goal position in degrees
+     * @param sensitivity sensitivity in degrees
+     */
+    public void powerToPosition (double power, int degrees, int sensitivity) {
+        power = Math.abs(power);
+        int goalPos = (int) (degrees * (3.1111111111)); // 1120 / 360 = 3.1111111111111
+        int margin = (int) (sensitivity * (3.1111111111));
+        double  motorPower = power;
+        if (Math.abs(motor.getCurrentPosition() - goalPos) < 2 * margin) {
+            motorPower /= 2;
+        }
+        if (Math.abs(motor.getCurrentPosition() - goalPos) > margin) { //If far away enough from goal position
+            if (motor.getCurrentPosition() < goalPos) {
+                motor.setPower(motorPower); //If position is behind the assigned position, move "forwards"
+            } else {
+                motor.setPower(-1 * motorPower); //Otherwise, must be ahead of assigned position, must "go back"
+            }
+        } else {
+            motor.setPower(0); //Stop if within sensitivity value of goal position
+        }
     }
 
-    public int getPosition(){
-        return motor.getCurrentPosition() - initPosition;
-    }
-    */
+    public int getPosition() {return motor.getCurrentPosition(); }
 
 }

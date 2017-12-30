@@ -48,7 +48,8 @@ public class AtREVModule {
         return null;
     }
 
-    public void add(AtREVComponent component){
+    public AtREVComponent add(AtREVComponent component){
         components.add(component);
+        return component;
     }
 }
