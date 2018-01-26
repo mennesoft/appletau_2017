@@ -14,6 +14,8 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 @Autonomous(name = "Concept: relicJewel", group = "Concept")
 public class AtRelicJewelAutonomous extends LinearOpMode {
 
+    boolean redTeam = true;
+
     //we only need the drive motors
     AtREVMotor LeftDrive;
     boolean LeftDriveGood;
@@ -22,35 +24,32 @@ public class AtRelicJewelAutonomous extends LinearOpMode {
     boolean RightDriveGood;
     float rDrive;
 
+    AtREVServo ArmServo;
+    boolean ArmGood;
+    float ArmPos;
+
     ColorSensor color_sensor;//color sensor
     boolean colorGood = true;
     float Red;
     float Green;
     float Blue;
 
-    ElapsedTime timer;
+    //ElapsedTime timer;
 
 
     public void ourInit() {
         /////// I N I T ///////
-        //initialize RightDrive motor. If it didn't work, still run the rest of the code.
 
         telemetry.addLine("Starting init...");
-        telemetry.update();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            telemetry.addLine("Problem with sleeping!");
-            telemetry.update();
-        }
 
+        //initialize RightDrive motor. If it didn't work, still run the rest of the code.
         try {
             telemetry.addLine("initing right drive");
             RightDrive = new AtREVMotor("RD");
             telemetry.addData("R Drive Initialization Good: ", RightDrive.init(hardwareMap));
             RightDriveGood = true;
         } catch (Exception e) {
-            telemetry.addData("R Drive Initialization Good: ", "FALSE");
+            telemetry.addData("R Drive Initialization Bad: ", e.getMessage());
             RightDriveGood = false;
         }
 
@@ -60,81 +59,92 @@ public class AtRelicJewelAutonomous extends LinearOpMode {
             LeftDrive = new AtREVMotor("LD");
             telemetry.addData("L Drive Initialization Good: ", LeftDrive.init(hardwareMap));
             LeftDriveGood = true;
-        } catch (IllegalArgumentException e) {
-            telemetry.addData("L Drive Initialization Good: ", "FALSE");
+        } catch (Exception e) {
+            telemetry.addData("L Drive Initialization Bad: ", e.getMessage());
             LeftDriveGood = false;
         }
 
+        //initialize servo
+        try {
+            telemetry.addLine("initing servo");
+            ArmServo = new AtREVServo("a");
+            telemetry.addData("Arm Servo Initialization Good:", ArmServo.init(hardwareMap));
+            ArmGood = true;
+        } catch (Exception e) {
+            telemetry.addData("Arm Servo Initialization Bad: ", e.getMessage());
+            ArmGood = false;
+        }
+
+
+        //initialize color sensor
         try {
             telemetry.addLine("initing color sensor");
             color_sensor = hardwareMap.colorSensor.get("C");
             telemetry.addData("Color Initialization Good: ", color_sensor);
             colorGood = true;
         } catch (Exception e) {
-            telemetry.addData("Color Initialization Not Good: ", e.getMessage());
+            telemetry.addData("Color Initialization Bad: ", e.getMessage());
             colorGood = false;
         }
 
         telemetry.addLine("done initing");
         telemetry.update();
 
+        //for the future: add a thing that keeps trying to init if a critical component doesn't init
 
         /////// I N I T ///////
     }
 
     @Override
     public void runOpMode() throws InterruptedException {
-        try {
-            telemetry.addLine("starting initializing");
-        } catch (Exception e) {
-            //nothing
-        }
+
+        telemetry.addLine("starting initializing");
+
         try {
             ourInit();
         } catch (Exception e) {
-            //nothing
+            telemetry.addData("Error with init:", e.getMessage());
         }
 
         // wait for the start button to be pressed
 
         telemetry.addData("Hi there!  Press start when you're ready.", "");
+        telemetry.update();
 
         waitForStart();//this is needed, waits for the user to press the play button on the DS
 
-        //LATER: move out servo arm
+        //move out servo arm
+        try {
+            ArmServo.setPosition(90);//not sure what the position's value should be, just do trial and error I guess
+        } catch (Exception e) {
+            telemetry.addData("Error w/ servo arm:", e.getMessage());
+        }
 
+        //turn on LED of color sensor
         try {
             color_sensor.enableLed(true);
         } catch (Exception e) {
-            telemetry.addData("enable LED no work:",e);
+            telemetry.addData("enable LED no work:",e.getMessage());
         }
 
-        //get off balance stone: drive forward slowly for 1.5 seconds
-        /*/disabled for now
+        //get off balance stone: drive forward slowly for some amount of time
+        ///*/disabled for now
         try {
-            LeftDrive.setPower(-.25);
-            RightDrive.setPower(.25);
-            Thread.sleep(1500);
+            LeftDrive.setPower(-.15);
+            RightDrive.setPower(.15);
+            Thread.sleep(1000);
             LeftDrive.setPower(0);
             RightDrive.setPower(0);
         } catch (Exception e) {
-            //nothing
+            telemetry.addData("Error w/ driving:", e.getMessage());
         }
-        /*/
+        ///*/
 
-        //read the value from the color sensor
-
-        try {
-            telemetry.addData("timer seconds:",timer.seconds());
-            telemetry.update();
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            telemetry.addData("error w/ timer:",e);
-            telemetry.update();
-            Thread.sleep(2000);
-        }
+        //read the value from the color sensor and take an average value
 
         double count = 0;
+        double redSum = 0;
+        double blueSum = 0;
 
         while (count < 3000/*/timer.seconds() < 25/*/) {
             count += 1;
@@ -145,8 +155,12 @@ public class AtRelicJewelAutonomous extends LinearOpMode {
                 Blue = color_sensor.blue();
 
             } catch (Exception e) {
-                //shrug
-            }//end try/catch
+                telemetry.addData("Error w/ color sensor:", e.getMessage());
+            }
+
+            redSum += Red;
+            blueSum += Blue;
+
             try {
                 telemetry.addData("R:", Red);
                 telemetry.addData("G:", Green);
@@ -155,9 +169,16 @@ public class AtRelicJewelAutonomous extends LinearOpMode {
             } catch (Exception e) {
                 //nothing, what can you do if telemetry doesn't work?
             }
+
+
         }//end while loop
 
-        //LATER: move arm in correct direction
+        double redAvg = redSum/count;
+        double blueAvg = blueSum/count;
+
+        //color sensor faces toward the left jewel
+
+        //move arm in correct direction
 
 
         try {
@@ -171,7 +192,7 @@ public class AtRelicJewelAutonomous extends LinearOpMode {
 
     private void debugData() {
 
-        telemetry.addData("  Timer reading:", timer.time());
+        //telemetry.addData("  Timer reading:", timer.time());
 
     }
 }
